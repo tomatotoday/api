@@ -265,7 +265,7 @@ def get_discussion_comments(discussion_id):
     )
     return jsonify(resp['result'])
 
-@bp.route('/discussion/<int:discussion_id>/comments>', methods=['POST'])
+@bp.route('/discussion/<int:discussion_id>/comments', methods=['POST'])
 @login_required
 def add_discussion_comment(discussion_id):
     form = DiscussionCommentForm(get_json_data())
