@@ -39,6 +39,15 @@ def jsonify(data):
     response.status = 200
     return response
 
+def get_current_user():
+    token = request.headers.get('Authorization')
+    if token.startswith('Bearer '):
+        abort(401)
+    resp = micro.account.Account.get_account_by_token(token)
+    if not resp['result']:
+        abort(401)
+    return resp['result']
+
 
 @bp.route('/subjects/<int:subject_id>')
 def get_subject(subject_id):
