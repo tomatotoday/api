@@ -92,7 +92,7 @@ def get_discussion(discussion_id):
     resp = micro.discussion.Discussion.get_discussion(discussion_id)
     return jsonify(resp['result'])
 
-@bp.route('/discussions/<int:discussion_id>/comments>')
+@bp.route('/discussions/<int:discussion_id>/comments')
 def get_discussion_comments(discussion_id):
     offset = request.args.get('offset', type=int, default=0)
     limit = request.args.get('limit', type=int, default=20)
