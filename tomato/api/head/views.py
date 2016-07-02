@@ -40,17 +40,23 @@ def jsonify(data):
     data = json.dumps(data)
     response = Response(data)
     response.headers['Content-Type'] = 'application/json'
-    response.status = 200
+    response.status_code = 200
     return response
 
 def get_current_user():
     token = request.headers.get('Authorization')
-    if token.startswith('Bearer '):
+    if not token or token.startswith('Bearer '):
         abort(401)
     resp = micro.account.Account.get_account_by_token(token)
     if not resp['result']:
         abort(401)
     return resp['result']
+
+@bp.errorhandler(401)
+def handle_not_authorized(e):
+    resp = jsonify({'message': 'not authorized'})
+    resp.status_code = 401
+    return resp
 
 @login.request_loader
 def load_user_from_request(request):
@@ -271,7 +277,7 @@ def add_discussion_comment(discussion_id):
     form = DiscussionCommentForm(get_json_data())
     if not form.validate_on_submit():
         resp = jsonify({'errors': form.errors})
-        resp.status = 400
+        resp.status_code = 400
         return resp
     data = form.data
     resp = micro.discussion.Discussion.get_disucssion(discussion_id)
