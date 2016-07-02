@@ -6,6 +6,7 @@ from flask import Response
 from flask import abort
 from werkzeug.datastructures import MultiDict
 from tomato.api.core import micro
+from tomato.api.core import oauth
 from tomato.api.v1.core import bp
 from tomato.api.forms import DiscussionCommentForm
 

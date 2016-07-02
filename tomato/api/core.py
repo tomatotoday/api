@@ -2,6 +2,7 @@
 
 from flask import abort
 from flask_jsonrpc.proxy import ServiceProxy
+from flask_oauthlib.provider import OAuth2Provider
 
 class MicroservicesProxy(ServiceProxy):
 
@@ -21,3 +22,4 @@ class Micro(object):
         return service_proxy
 
 micro = Micro()
+oauth = OAuth2Provider()
