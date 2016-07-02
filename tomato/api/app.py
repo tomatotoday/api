@@ -6,7 +6,7 @@ import click
 from flask import Flask
 
 from tomato.api.core import oauth
-from tomato.api.versions.v1 import bp as v1bp
+from tomato.api.head import bp
 
 def create_app():
     app = Flask(__name__)
@@ -17,7 +17,7 @@ def create_app():
 
     oauth.init_app(app)
 
-    app.register_blueprint(v1bp, url_prefix='/1')
+    app.register_blueprint(bp, url_prefix='/1')
 
     return app
 
