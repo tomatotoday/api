@@ -4,8 +4,29 @@ import json
 from flask import request
 from flask import Response
 from flask import abort
+from werkzeug.datastructures import MultiDict
 from tomato.api.core import micro
 from tomato.api.v1.core import bp
+from tomato.api.forms import DiscussionCommentForm
+
+def json_to_form(data, prefix='', flattened=None):
+    if flattened is None:
+        flattened = MultiDict()
+    if isinstance(data, dict):
+        for k, v in data.iteritems():
+            inner_prefix = '%s-%s' % (prefix, k) if prefix else k
+            json_to_form(v, inner_prefix, flattened)
+    elif isinstance(data, list):
+        for i, v in enumerate(data):
+            inner_prefix = '%s-%d' % (prefix, i)
+            json_to_form(v, inner_prefix, flattened)
+    else:
+        flattened[prefix] = data
+    return flattened
+
+
+def get_json_data():
+    return json_to_form(request.get_json())
 
 def jsonify(data):
     """Helper function: jsonify.
@@ -82,3 +103,20 @@ def get_discussion_comments(discussion_id):
     )
     return jsonify(resp['result'])
 
+@bp.route('/discussion/<int:discussion_id>/comments>', methods=['POST'])
+def add_discussion_comment(discussion_id):
+    form = DiscussionCommentForm(get_json_data())
+    if not form.validate_on_submit():
+        resp = jsonify({'errors': form.errors})
+        resp.status = 400
+        return resp
+    data = form.data
+    resp = micro.discussion.Discussion.get_disucssion(discussion_id)
+    if not resp['result']:
+        abort(404)
+    resp = micro.discussion.Discussion.add_discussion_comment(
+        discussion_id=discussion_id,
+        title=data['title'],
+        content=data['content'],
+    )
+    return jsonify(resp['result'])
