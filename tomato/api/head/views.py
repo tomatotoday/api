@@ -4,11 +4,14 @@ import json
 from flask import request
 from flask import Response
 from flask import abort
+from flask_login import login_required
+from flask_login import current_user
 from werkzeug.datastructures import MultiDict
 from tomato.api.core import micro
 from tomato.api.core import oauth
-from tomato.api.v1.core import bp
+from tomato.api.core import login
 from tomato.api.forms import DiscussionCommentForm
+from tomato.api.head.core import bp
 
 def json_to_form(data, prefix='', flattened=None):
     if flattened is None:
@@ -48,6 +51,10 @@ def get_current_user():
     if not resp['result']:
         abort(401)
     return resp['result']
+
+@login.request_loader
+def load_user_from_request(request):
+    return get_current_user()
 
 @oauth.usergetter
 def get_user_for_oauth(username, password, *args, **kwargs):
@@ -102,11 +109,11 @@ def get_client(client_id):
 
 @bp.route('/accounts/me')
 def get_my_account():
-    user = get_current_user()
+    user = current_user
     return jsonify(user)
 
 @bp.route('/oauth/authorize', methods=['GET', 'POST'])
-@require_login
+@login_required
 @oauth.authorize_handler
 def authorize(*args, **kwargs):
     if request.method == 'GET':
@@ -153,9 +160,9 @@ def get_subject_discussions(subject_id):
 
 
 @bp.route('/follows/subjects')
-@require_login
+@login_required
 def get_user_followed_subjects():
-    user = get_current_user()
+    user = current_user
     offset = request.args.get('offset', type=int, default=0)
     limit = request.args.get('limit', type=int, default=20)
     resp = micro.stream.Stream.get_user_followed_subjects(
@@ -166,9 +173,9 @@ def get_user_followed_subjects():
     return jsonify(resp['result'])
 
 @bp.route('/follows/subjects/<int:subject_id>', methods=['POST'])
-@require_login
+@login_required
 def follow_subject(subject_id):
-    user = get_current_user()
+    user = current_user
     resp = micro.subject.Subject.get_subject(subject_id)
     subject = resp['result']
     if not subject:
@@ -180,9 +187,9 @@ def follow_subject(subject_id):
     return '', 204
 
 @bp.route('/follows/subjects/<int:subject_id>', methods=['DELETE'])
-@require_login
+@login_required
 def unfollow_subject(subject_id):
-    user = get_current_user()
+    user = current_user
     resp = micro.subject.Subject.get_subject(subject_id)
     subject = resp['result']
     if not subject:
@@ -195,7 +202,7 @@ def unfollow_subject(subject_id):
 
 
 @bp.route('/feeds')
-@require_login
+@login_required
 def get_feeds():
     """Get user feeds."""
     user = request.models.get('user')
@@ -217,9 +224,9 @@ def get_discussion_exploration():
     return jsonify(resp['result'])
 
 @bp.route('/discussions/published')
-@require_login
+@login_required
 def get_published_discussions():
-    user = get_current_user()
+    user = current_user
     offset = request.args.get('offset', type=int, default=0)
     limit = request.args.get('limit', type=int, default=20)
     resp = micro.discussion.Discussion.get_published_discussions(
@@ -230,9 +237,9 @@ def get_published_discussions():
     return jsonify(resp['result'])
 
 @bp.route('/discussions/commented')
-@require_login
+@login_required
 def get_commented_discussions():
-    user = get_current_user()
+    user = current_user
     offset = request.args.get('offset', type=int, default=0)
     limit = request.args.get('limit', type=int, default=20)
     resp = micro.discussion.Discussion.get_commented_discussions(
@@ -259,7 +266,7 @@ def get_discussion_comments(discussion_id):
     return jsonify(resp['result'])
 
 @bp.route('/discussion/<int:discussion_id>/comments>', methods=['POST'])
-@require_login
+@login_required
 def add_discussion_comment(discussion_id):
     form = DiscussionCommentForm(get_json_data())
     if not form.validate_on_submit():
