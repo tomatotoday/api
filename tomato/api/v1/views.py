@@ -66,6 +66,45 @@ def get_subject_discussions(subject_id):
     return jsonify(discussions)
 
 
+@bp.route('/follows/subjects')
+def get_user_followed_subjects():
+    user = get_current_user()
+    offset = request.args.get('offset', type=int, default=0)
+    limit = request.args.get('limit', type=int, default=20)
+    resp = micro.stream.Stream.get_user_followed_subjects(
+        user_id=user['id'],
+        offset=offset,
+        limit=limit,
+    )
+    return jsonify(resp['result'])
+
+@bp.route('/follows/subjects/<int:subject_id>', methods=['POST'])
+def follow_subject(subject_id):
+    user = get_current_user()
+    resp = micro.subject.Subject.get_subject(subject_id)
+    subject = resp['result']
+    if not subject:
+        abort(404)
+    resp = micro.stream.Stream.follow_subject(
+        user_id=user['id'],
+        subject_id=subject_id
+    )
+    return '', 204
+
+@bp.route('/follows/subjects/<int:subject_id>', methods=['DELETE'])
+def unfollow_subject(subject_id):
+    user = get_current_user()
+    resp = micro.subject.Subject.get_subject(subject_id)
+    subject = resp['result']
+    if not subject:
+        abort(404)
+    resp = micro.stream.Stream.unfollow_subject(
+        user_id=user['id'],
+        subject_id=subject_id
+    )
+    return '', 204
+
+
 @bp.route('/feeds')
 def get_feeds():
     """Get user feeds."""
@@ -90,6 +129,8 @@ def get_discussion_exploration():
 @bp.route('/discussions/published')
 def get_published_discussions():
     user = get_current_user()
+    offset = request.args.get('offset', type=int, default=0)
+    limit = request.args.get('limit', type=int, default=20)
     resp = micro.discussion.Discussion.get_published_discussions(
         user_id=user['id'],
         offset=offset,
@@ -100,6 +141,8 @@ def get_published_discussions():
 @bp.route('/discussions/commented')
 def get_commented_discussions():
     user = get_current_user()
+    offset = request.args.get('offset', type=int, default=0)
+    limit = request.args.get('limit', type=int, default=20)
     resp = micro.discussion.Discussion.get_commented_discussions(
         user_id=user['id'],
         offset=offset,
