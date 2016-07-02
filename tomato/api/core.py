@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 
 from flask import abort
+from flask import current_app
+from urllib2 import HTTPError
 from flask_jsonrpc.proxy import ServiceProxy
 from flask_oauthlib.provider import OAuth2Provider
 from flask_login import LoginManager
@@ -8,7 +10,10 @@ from flask_login import LoginManager
 class MicroservicesProxy(ServiceProxy):
 
     def __call__(self, *args, **kwargs):
-        resp = super(MicroservicesProxy, self).__call__(*args, **kwargs)
+        try:
+            resp = super(MicroservicesProxy, self).__call__(*args, **kwargs)
+        except HTTPError as error:
+            abort(502)
         if 'result' not in resp:
             print(resp)
             abort(500)
