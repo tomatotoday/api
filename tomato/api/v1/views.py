@@ -65,3 +65,9 @@ def get_discussion_exploration():
     """Find some fresh discussions to guide user exploring this project."""
     resp = micro.discussion.Discussion.get_random_discussions()
     return jsonify(resp['result'])
+
+@bp.route('/discussions/<int:discussion_id>')
+def get_discussion(discussion_id):
+    resp = micro.discussion.Discussion.get_discussion(discussion_id)
+    return jsonify(resp['result'])
+
