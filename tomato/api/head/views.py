@@ -58,6 +58,36 @@ def handle_not_authorized(e):
     resp.status_code = 401
     return resp
 
+@bp.errorhandler(400)
+def handle_not_authorized(e):
+    resp = jsonify({'message': 'bad request'})
+    resp.status_code = 400
+    return resp
+
+@bp.errorhandler(403)
+def handle_not_authorized(e):
+    resp = jsonify({'message': 'forbidden'})
+    resp.status_code = 403
+    return resp
+
+@bp.errorhandler(404)
+def handle_not_authorized(e):
+    resp = jsonify({'message': 'not found'})
+    resp.status_code = 404
+    return resp
+
+@bp.errorhandler(500)
+def handle_not_authorized(e):
+    resp = jsonify({'message': 'internal server error'})
+    resp.status_code = 500
+    return resp
+
+@bp.errorhandler(502)
+def handle_not_authorized(e):
+    resp = jsonify({'message': 'bad gateway'})
+    resp.status_code = 502
+    return resp
+
 @login.request_loader
 def load_user_from_request(request):
     return get_current_user()
