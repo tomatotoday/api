@@ -6,6 +6,7 @@ import click
 from flask import Flask
 
 from tomato.api.core import oauth
+from tomato.api.core import login
 from tomato.api.head import bp
 
 def create_app():
@@ -16,6 +17,7 @@ def create_app():
     print('Running application in %s mode' % (app.debug and 'DEBUG' or 'NON-DEBUG'))
 
     oauth.init_app(app)
+    login.init_app(app)
 
     app.register_blueprint(bp, url_prefix='/1')
 
