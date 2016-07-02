@@ -48,6 +48,82 @@ def get_current_user():
         abort(401)
     return resp['result']
 
+@oauth.usergetter
+def get_user_for_oauth(username, password, *args, **kwargs):
+    resp = micro.account.Account.validate_user(
+        username=username,
+        password=password,
+    )
+    return resp['result']
+
+@oauth.tokensetter
+def save_token(token, request, *args, **kwargs):
+    resp = micro.account.OAuth2.save_token(
+        client_id=request.client.client_id,
+        user_id=request.user.id,
+        expires_in=token['expires_in'],
+        access_token=token['access_token'],
+        refresh_token=token['refresh_token'],
+        token_type=token['token_type'],
+        scope=token['scope'],
+    )
+    return resp['result']
+
+@oauth.tokengetter
+def get_token(access_token=None, refresh_token=None):
+    if access_token:
+        resp = micro.account.OAuth2.get_token_by_access_token(access_token)
+        return resp['result']
+    elif refresh_token:
+        resp = micro.account.OAuth2.get_token_by_refresh_token(refresh_token)
+        return resp['result']
+
+@oauth.grantgetter
+def get_grant(client_id, code):
+    resp = micro.account.OAuth2.get_grant(client_id=client_id, code=code)
+    return resp['result']
+
+@oauth.grantsetter
+def save_grant(client_id, code, request, *args, **kwargs):
+    resp = micro.account.OAuth2.save_grant(
+        client_id=client_id,
+        code=code['code'],
+        redirect_uri=request.redirect_uri,
+        scopes=request.scopes,
+        user=get_current_user(),
+    )
+    return resp['result']
+
+@oauth.clientgetter
+def get_client(client_id):
+    resp = micro.account.OAuth2.get_client(client_id=client_id)
+    return resp['result']
+
+@bp.route('/accounts/me')
+def get_my_account():
+    user = get_current_user()
+    return jsonify(user)
+
+@bp.route('/oauth/authorize', methods=['GET', 'POST'])
+@require_login
+@oauth.authorize_handler
+def authorize(*args, **kwargs):
+    if request.method == 'GET':
+        client_id = kwargs.get('client_id')
+        resp = micro.account.OAuth2.get_client(client_id)
+        return render_template('oauthorize.html', client=resp['result'])
+    confirm = request.form.get('confirm', 'no')
+    return confirm == 'yes'
+
+@bp.route('/oauth/token')
+@oauth.token_handler
+def access_token():
+    return
+
+@bp.route('/oauth/revoke', methods=['POST'])
+@oauth.revoke_handler
+def revoke_token():
+    pass
 
 @bp.route('/subjects/<int:subject_id>')
 def get_subject(subject_id):
@@ -76,6 +152,7 @@ def get_subject_discussions(subject_id):
 
 
 @bp.route('/follows/subjects')
+@require_login
 def get_user_followed_subjects():
     user = get_current_user()
     offset = request.args.get('offset', type=int, default=0)
@@ -88,6 +165,7 @@ def get_user_followed_subjects():
     return jsonify(resp['result'])
 
 @bp.route('/follows/subjects/<int:subject_id>', methods=['POST'])
+@require_login
 def follow_subject(subject_id):
     user = get_current_user()
     resp = micro.subject.Subject.get_subject(subject_id)
@@ -101,6 +179,7 @@ def follow_subject(subject_id):
     return '', 204
 
 @bp.route('/follows/subjects/<int:subject_id>', methods=['DELETE'])
+@require_login
 def unfollow_subject(subject_id):
     user = get_current_user()
     resp = micro.subject.Subject.get_subject(subject_id)
@@ -115,6 +194,7 @@ def unfollow_subject(subject_id):
 
 
 @bp.route('/feeds')
+@require_login
 def get_feeds():
     """Get user feeds."""
     user = request.models.get('user')
@@ -136,6 +216,7 @@ def get_discussion_exploration():
     return jsonify(resp['result'])
 
 @bp.route('/discussions/published')
+@require_login
 def get_published_discussions():
     user = get_current_user()
     offset = request.args.get('offset', type=int, default=0)
@@ -148,6 +229,7 @@ def get_published_discussions():
     return jsonify(resp['result'])
 
 @bp.route('/discussions/commented')
+@require_login
 def get_commented_discussions():
     user = get_current_user()
     offset = request.args.get('offset', type=int, default=0)
@@ -176,6 +258,7 @@ def get_discussion_comments(discussion_id):
     return jsonify(resp['result'])
 
 @bp.route('/discussion/<int:discussion_id>/comments>', methods=['POST'])
+@require_login
 def add_discussion_comment(discussion_id):
     form = DiscussionCommentForm(get_json_data())
     if not form.validate_on_submit():
