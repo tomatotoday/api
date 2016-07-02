@@ -45,19 +45,19 @@ def get_subject_discussions(subject_id):
     return jsonify(discussions)
 
 
-@bp.route('/discussions/timeline')
-def get_discussion_timeline():
-    """Get user timeline."""
+@bp.route('/feeds')
+def get_feeds():
+    """Get user feeds."""
     user = request.models.get('user')
     offset = request.args.get('offset', type=int, default=0)
     limit = request.args.get('limit', type=int, default=20)
-    resp = micro.discussion.Discussion.get_user_followed_topic_discussions(
+    resp = micro.stream.Stream.get_feeds(
         user_id=user['id'],
         offset=offset,
         limit=limit,
     )
-    discussions = resp['result']
-    return jsonify(discussions)
+    feeds = resp['result']
+    return jsonify(feeds)
 
 
 @bp.route('/discussions/explore')
