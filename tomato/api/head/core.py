@@ -2,4 +2,4 @@
 
 from flask import Blueprint
 
-bp = Blueprint('v1', __name__)
+bp = Blueprint('head', __name__)

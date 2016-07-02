@@ -6,7 +6,7 @@ import click
 from flask import Flask
 
 from tomato.api.core import oauth
-from tomato.api.v1 import bp as v1bp
+from tomato.api.versions.v1 import bp as v1bp
 
 def create_app():
     app = Flask(__name__)
