@@ -19,7 +19,7 @@ def create_app():
     oauth.init_app(app)
     login.init_app(app)
 
-    app.register_blueprint(bp, url_prefix='/1')
+    app.register_blueprint(bp, url_prefix='/HEAD')
 
     return app
 
