@@ -2,6 +2,7 @@
 
 import json
 from flask import request
+from flask import render_template
 from flask import Response
 from flask import abort
 from flask_login import login_required
@@ -12,6 +13,27 @@ from tomato.api.core import oauth
 from tomato.api.core import login
 from tomato.api.forms import DiscussionCommentForm
 from tomato.api.head.core import bp
+
+class obj(object):
+    def __init__(self, dictionary):
+        for a, b in dictionary.items():
+            if isinstance(b, (list, tuple)):
+               setattr(self, a, [obj(x) if isinstance(x, dict) else x for x in b])
+            else:
+               setattr(self, a, obj(b) if isinstance(b, dict) else b)
+
+class User(obj):
+    @property
+    def is_active(self):
+        return True
+    @property
+    def is_authenticated(self):
+        return True
+    def get_id(self):
+        return self.id
+    @property
+    def is_anonymous(self):
+        return False
 
 def json_to_form(data, prefix='', flattened=None):
     if flattened is None:
@@ -45,9 +67,10 @@ def jsonify(data):
 
 def get_current_user():
     token = request.headers.get('Authorization')
-    if not token or token.startswith('Bearer '):
+    if not token or not token.startswith('Bearer '):
         abort(401)
-    resp = micro.account.Account.get_account_by_token(token)
+    token = token.replace('Bearer ', '')
+    resp = micro.account.Account.get_user_by_token(token)
     if not resp['result']:
         abort(401)
     return resp['result']
@@ -90,7 +113,8 @@ def handle_not_authorized(e):
 
 @login.request_loader
 def load_user_from_request(request):
-    return get_current_user()
+    user = get_current_user()
+    return user and User(user)
 
 @oauth.usergetter
 def get_user_for_oauth(username, password, *args, **kwargs):
@@ -98,7 +122,7 @@ def get_user_for_oauth(username, password, *args, **kwargs):
         username=username,
         password=password,
     )
-    return resp['result']
+    return resp['result'] and obj(resp['result'])
 
 @oauth.tokensetter
 def save_token(token, request, *args, **kwargs):
@@ -111,21 +135,21 @@ def save_token(token, request, *args, **kwargs):
         token_type=token['token_type'],
         scopes=token['scope'],
     )
-    return resp['result']
+    return obj(resp['result'])
 
 @oauth.tokengetter
 def get_token(access_token=None, refresh_token=None):
     if access_token:
         resp = micro.account.OAuth2.get_token_by_access_token(access_token)
-        return resp['result']
+        return obj(resp['result'])
     elif refresh_token:
         resp = micro.account.OAuth2.get_token_by_refresh_token(refresh_token)
-        return resp['result']
+        return obj(resp['result'])
 
 @oauth.grantgetter
 def get_grant(client_id, code):
     resp = micro.account.OAuth2.get_grant(client_id=client_id, code=code)
-    return resp['result']
+    return obj(resp['result'])
 
 @oauth.grantsetter
 def save_grant(client_id, code, request, *args, **kwargs):
@@ -134,18 +158,19 @@ def save_grant(client_id, code, request, *args, **kwargs):
         code=code['code'],
         redirect_uri=request.redirect_uri,
         scopes=request.scopes,
-        user_id=get_current_user()['id'],
+        user_id=request.user.id,
     )
-    return resp['result']
+    return obj(resp['result'])
 
 @oauth.clientgetter
 def get_client(client_id):
     resp = micro.account.OAuth2.get_client(client_id=client_id)
-    return resp['result']
+    return obj(resp['result'])
 
 @bp.route('/accounts/me')
+@login_required
 def get_my_account():
-    user = current_user
+    user = get_current_user()
     return jsonify(user)
 
 @bp.route('/oauth/authorize', methods=['GET', 'POST'])
@@ -159,7 +184,7 @@ def authorize(*args, **kwargs):
     confirm = request.form.get('confirm', 'no')
     return confirm == 'yes'
 
-@bp.route('/oauth/token')
+@bp.route('/oauth/token', methods=['POST'])
 @oauth.token_handler
 def access_token():
     return
