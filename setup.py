@@ -22,7 +22,7 @@ test_requirements = [
 
 setup(
     name='tomato.api',
-    version='0.1.0',
+    version='0.1.1',
     description="tomato api.",
     long_description=readme,
     author="Ju Lin",
