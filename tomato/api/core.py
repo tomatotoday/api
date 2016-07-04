@@ -15,7 +15,6 @@ class MicroservicesProxy(ServiceProxy):
         except HTTPError as error:
             abort(502)
         if 'result' not in resp:
-            print(resp)
             abort(500)
         return resp
 
