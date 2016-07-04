@@ -109,7 +109,7 @@ def save_token(token, request, *args, **kwargs):
         access_token=token['access_token'],
         refresh_token=token['refresh_token'],
         token_type=token['token_type'],
-        scope=token['scope'],
+        scopes=token['scope'],
     )
     return resp['result']
 
@@ -134,7 +134,7 @@ def save_grant(client_id, code, request, *args, **kwargs):
         code=code['code'],
         redirect_uri=request.redirect_uri,
         scopes=request.scopes,
-        user=get_current_user(),
+        user_id=get_current_user()['id'],
     )
     return resp['result']
 
